@@ -14,11 +14,6 @@ const encrypt = buffer => {
   return crypted;
 };
 
-/**
- * Decrypts a buffer / stream of data.
- */
-const decrypt = crypto.createDecipher(algorithm, password);
-
 const writeFile = req => {
   return new Promise((resolve, reject) => {
     if (req.file) {
@@ -51,7 +46,12 @@ const readFile = (fileId, res) => {
       try {
         let grid = require("gridfs")(mongoose.connection.db, mongoose.mongo);
         let exists = await grid.exist({ _id: fileId });
+
         if (exists) {
+          /**
+           * Decrypts a buffer / stream of data.
+           */
+          const decrypt = crypto.createDecipher(algorithm, password);
           let readStream = grid.createReadStream({ _id: fileId });
           readStream.pipe(decrypt).pipe(res);
           readStream.on("close", () => {
@@ -84,16 +84,27 @@ const readWholeFile = fileId => {
         let grid = require("gridfs")(mongoose.connection.db, mongoose.mongo);
         let exists = await grid.exist({ _id: fileId });
         if (exists) {
+          /**
+           * Decrypts a buffer / stream of data.
+           */
+          const decrypt = crypto.createDecipher(algorithm, password);
           let readStream = grid.createReadStream({ _id: fileId });
-          let p = readStream.pipe(decrypt);
+          const p = readStream.pipe(decrypt);
           let buffers = [];
-          p.on("error", () => {
-            return reject("stream could not be read");
+          p.on("error", err => {
+            readStream.destroy();
+            p.destroy();
+            console.log(err);
+            return reject(err);
           });
           p.on("data", data => {
             buffers.push(data);
           });
-          p.on("end", () => resolve(Buffer.concat(buffers)));
+          p.on("end", () => {
+            readStream.destroy();
+            p.destroy();
+            resolve(Buffer.concat(buffers));
+          });
         } else {
           return reject(`cannot find configuration file with id ${fileId}`);
         }
