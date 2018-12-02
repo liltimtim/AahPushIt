@@ -17,6 +17,7 @@ mongoose.connect(
 
 // Passport
 app.use(passport.initialize());
+require("./config/passport")(passport);
 
 // Setup Routes
 const Routes = require("./routes")(app);

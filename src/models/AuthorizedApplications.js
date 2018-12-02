@@ -6,7 +6,6 @@ const SECRET_KEY = require("../config/keys").SECRET_KEY;
 const AuthorizedApplicationsSchema = new Schema({
   name: {
     type: String,
-    select: false,
     required: true,
     minlength: 1,
     maxlength: 200
@@ -19,7 +18,7 @@ const AuthorizedApplicationsSchema = new Schema({
 });
 
 AuthorizedApplicationsSchema.plugin(mongooseFieldEncryption, {
-  fields: ["firebase_config"],
+  fields: ["firebase_config", "name"],
   secret: SECRET_KEY
 });
 
